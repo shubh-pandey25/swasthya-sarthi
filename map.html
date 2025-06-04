@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ambulance Tracker Demo</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body { margin: 0; }
+    #map { height: 100vh; width: 100vw; }
+    #info {
+      position: absolute; top: 10px; left: 10px;
+      background: white; padding: 10px;
+      z-index: 999; border-radius: 5px;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<div id="info">
+  <h3>🚑 Ambulance Tracking</h3>
+  <p><strong>Distance:</strong> <span id="distance">Calculating...</span></p>
+  <p><strong>ETA:</strong> <span id="eta">Calculating...</span></p>
+  <p><strong>Status:</strong> <span id="status">Waiting to start...</span></p>
+</div>
+
+<div id="map"></div>
+
+<script>
+  // Coordinates
+  const hospital = [28.3933, 79.4300]; // SRMS CET Bareilly
+  let ambulance = [28.3870, 79.4350]; // SRMS IMS Bareilly (starting point)
+
+  // Map setup
+  const map = L.map('map').setView(hospital, 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Markers
+  const hospitalMarker = L.marker(hospital).addTo(map).bindPopup("🏥 SRMS CET Bareilly").openPopup();
+  const ambulanceMarker = L.marker(ambulance).addTo(map).bindPopup("🚑 Ambulance from SRMS IMS Bareilly");
+
+  // Distance calculator
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  let progress = 0;
+  const steps = 100;
+  const interval = setInterval(() => {
+    if (progress > 1) {
+      document.getElementById("status").textContent = "Arrived at SRMS CET Bareilly ✅";
+      clearInterval(interval);
+      return;
+    }
+
+    // Simulate movement
+    ambulance[0] = ambulance[0] + (hospital[0] - ambulance[0]) * 0.01;
+    ambulance[1] = ambulance[1] + (hospital[1] - ambulance[1]) * 0.01;
+    progress += 0.01;
+
+    ambulanceMarker.setLatLng(ambulance);
+
+    const distance = haversine(ambulance[0], ambulance[1], hospital[0], hospital[1]);
+    const speed = 30; // km/h
+    const eta = distance / speed * 60;
+
+    document.getElementById("distance").textContent = distance.toFixed(2) + " km";
+    document.getElementById("eta").textContent = eta.toFixed(0) + " mins";
+    document.getElementById("status").textContent = "On the way from SRMS IMS Bareilly...";
+
+  }, 1000);
+</script>
+
+</body>
+</html>

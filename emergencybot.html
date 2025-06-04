@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🩺 Indian Emergency Bot</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header {
+      background: #0066cc;
+      color: white;
+      padding: 20px;
+      font-size: 1.4rem;
+      text-align: center;
+    }
+    .chat {
+      height: 400px;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .msg {
+      padding: 10px 14px;
+      border-radius: 10px;
+      max-width: 80%;
+    }
+    .user { align-self: flex-end; background: #d1e7ff; }
+    .bot { align-self: flex-start; background: #eeeeee; }
+    .input-area {
+      display: flex;
+      padding: 10px;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    input, select {
+      flex: 1;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .send { background: #0066cc; color: white; }
+    .mic { background: #28a745; color: white; }
+    .mic.listening { background: #dc3545; animation: pulse 1s infinite; }
+    .speak { background: #ff9800; color: white; }
+    .share { background: #25d366; color: white; }
+    .location { background: #6f42c1; color: white; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); }
+      70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">🆘 Emergency Medical Bot </div>
+    <div class="chat" id="chat">
+      <div class="msg bot">Namaste! Describe the symptoms. I’ll guide you with India-specific emergency steps.</div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="input" placeholder="e.g., chest pain, bleeding..." />
+      <button class="send" onclick="send()">Send</button>
+      <button class="mic" id="mic" onclick="voice()">🎙️</button>
+      <button class="speak" onclick="speak()">🗣️</button>
+      <button class="share" onclick="share()">📤</button>
+      <button class="location" onclick="getLocation()">📍</button>
+      <select id="lang">
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+      </select>
+    </div>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const micBtn = document.getElementById("mic");
+    let lastBotReply = "";
+
+    function addMsg(text, type) {
+      const div = document.createElement("div");
+      div.className = `msg ${type}`;
+      div.innerText = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function send() {
+      const input = document.getElementById("input");
+      const lang = document.getElementById("lang").value;
+      const userMsg = input.value.trim();
+      if (!userMsg) return;
+      addMsg(userMsg, "user");
+      input.value = "";
+
+      let instruction = `You are a medical assistant for Indian users. Respond in ${lang === 'hi' ? 'Hindi' : 'English'} only. 
+User said: "${userMsg}"
+Give medically verified steps relevant to India. Mention if they should call 108 ambulance. Include first-aid using items commonly found in Indian homes. if the input is not of any disease or not related to medical then show ni disease found`;
+
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCP3TnlvWhOtPbYtSAToO2zZuB0QhGkNCo`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: instruction }] }]
+          })
+        });
+
+        const data = await res.json();
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ No data found";
+        addMsg(reply, "bot");
+        lastBotReply = reply;
+      } catch (err) {
+        console.error(err);
+        addMsg("⚠️ Error in fetching data", "bot");
+      }
+    }
+
+    function voice() {
+      const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      rec.lang = 'en-IN';
+      micBtn.classList.add("listening");
+      rec.start();
+
+      rec.onresult = e => {
+        const text = e.results[0][0].transcript;
+        document.getElementById("input").value = text;
+        send();
+        micBtn.classList.remove("listening");
+      };
+
+      rec.onerror = e => {
+        console.log("Voice error", e.error);
+        micBtn.classList.remove("listening");
+      };
+    }
+
+    function speak() {
+      if (!lastBotReply) return;
+      const synth = window.speechSynthesis;
+      const utter = new SpeechSynthesisUtterance(lastBotReply);
+      utter.lang = document.getElementById("lang").value === 'hi' ? 'hi-IN' : 'en-IN';
+      synth.speak(utter);
+    }
+
+    function share() {
+      const url = `https://wa.me/?text=${encodeURIComponent(lastBotReply || "Emergency steps from bot")}`;
+      window.open(url, '_blank');
+    }
+
+    function getLocation() {
+      if (!navigator.geolocation) return alert("Geolocation not supported");
+      navigator.geolocation.getCurrentPosition(pos => {
+        const link = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        window.open(link, '_blank');
+      }, () => {
+        alert("Unable to fetch location");
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Swasthya Sarthi Login/Signup</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background: #f0f9ff; margin: 0; padding: 0; }
+    .container {
+      width: 100%;
+      max-width: 450px;
+      margin: auto;
+      padding: 2rem;
+      margin-top: 50px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    h2 { text-align: center; color: #0077b6; }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0077b6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover { background: #023e8a; }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .hidden { display: none; }
+    .toggle-buttons { display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .toggle-buttons button { width: 48%; }
+    video, canvas {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Step 1 -->
+  <div class="container" id="step1">
+    <h2>Welcome to Swasthya Sarthi</h2>
+    <div class="toggle-buttons">
+      <button onclick="chooseMode('signup')">Sign Up</button>
+      <button onclick="chooseMode('login')">Log In</button>
+    </div>
+  </div>
+
+  <!-- Role Select -->
+  <div class="container hidden" id="role-select">
+    <h2>Register as</h2>
+    <div class="toggle-buttons">
+      <button onclick="selectRole('user')">🧑‍💼 User</button>
+      <button onclick="selectRole('doctor')">👨‍⚕️ Doctor</button>
+    </div>
+  </div>
+
+  <!-- Login Form -->
+  <div class="container hidden" id="login-form">
+    <h2>Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email" required />
+    <input type="password" id="loginPassword" placeholder="Password" required />
+    <button onclick="handleLogin()">Log In</button>
+  </div>
+
+  <!-- User Signup -->
+  <div class="container hidden" id="user-form">
+    <h2>User Signup</h2>
+    <input type="text" id="userName" placeholder="Full Name" required />
+    <input type="tel" id="userMobile" placeholder="Mobile Number" required />
+    <input type="email" id="userEmail" placeholder="Email" required />
+    <input type="password" id="userPassword" placeholder="Password" required />
+    <button onclick="sendOtp('user')">Send OTP</button>
+    <div class="hidden" id="user-otp-section">
+      <input type="text" id="userOtp" placeholder="Enter OTP" required />
+      <button onclick="verifyOtp('user')">Verify & Create Account</button>
+    </div>
+  </div>
+
+  <!-- Doctor Signup -->
+  <div class="container hidden" id="doctor-form">
+    <h2>Doctor Signup</h2>
+    <input type="text" id="docName" placeholder="Full Name" required />
+    <input type="tel" id="docMobile" placeholder="Mobile Number" required />
+    <input type="email" id="docEmail" placeholder="Email" required />
+    <input type="password" id="docPassword" placeholder="Password" required />
+    <button onclick="sendOtp('doctor')">Send OTP</button>
+    <div class="hidden" id="doctor-otp-section">
+      <input type="text" id="docOtp" placeholder="Enter OTP" required />
+      <button onclick="nextDoctorStep()">Verify OTP</button>
+    </div>
+  </div>
+
+  <!-- Doctor Extra -->
+  <div class="container hidden" id="doctor-extra-form">
+    <h2>Doctor Details</h2>
+    <input type="text" id="docSpecialization" placeholder="Specialization" required />
+    <input type="number" id="docExperience" placeholder="Years of Experience" required />
+    <textarea id="docWork" placeholder="Work Experience Details" required></textarea>
+    <input type="file" id="docProof" accept=".pdf,.jpg,.png" required />
+    <button onclick="nextLiveSelfie()">Next</button>
+  </div>
+
+  <!-- Doctor Live Selfie -->
+  <div class="container hidden" id="doctor-selfie">
+    <h2>Capture Live Selfie</h2>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" class="hidden"></canvas>
+    <button onclick="captureSelfie()">📸 Capture Selfie</button>
+    <button id="submitDoctorBtn" class="hidden" onclick="submitDoctor()">Submit & Await Verification</button>
+  </div>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  
+    const supabase = createClient(
+      'https://feevjtsbldbrnzeszlqr.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZXZqdHNibGRicm56ZXN6bHFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjI5OTAsImV4cCI6MjA2MDc5ODk5MH0.qva3jP_64B294xnL-YqioBS6JZ-QSn4exFLbWJVlY_U'
+    );
+  
+    let mode = '';
+    let otpStore = {
+      user: { otp: '', expires: 0 },
+      doctor: { otp: '', expires: 0 }
+    };
+    let capturedSelfieBlob = null;
+    let doctorData = {}; // Store all doctor data in this object
+  
+    // Sign Up / Login selection
+    window.chooseMode = function (selectedMode) {
+      mode = selectedMode;
+      document.getElementById('step1').classList.add('hidden');
+      if (mode === 'signup') {
+        document.getElementById('role-select').classList.remove('hidden');
+      } else {
+        document.getElementById('login-form').classList.remove('hidden');
+      }
+    };
+  
+    window.selectRole = function (role) {
+      document.getElementById('role-select').classList.add('hidden');
+      document.getElementById(role === 'user' ? 'user-form' : 'doctor-form').classList.remove('hidden');
+    };
+  
+    function generateSecureOtp(length = 6) {
+      const digits = '0123456789';
+      let otp = '';
+      for (let i = 0; i < length; i++) {
+        otp += digits[Math.floor(Math.random() * 10)];
+      }
+      return otp;
+    }
+  
+    window.sendOtp = async function (role) {
+      const email = role === 'user'
+        ? document.getElementById('userEmail').value
+        : document.getElementById('docEmail').value;
+      const password = role === 'user'
+        ? document.getElementById('userPassword').value
+        : document.getElementById('docPassword').value;
+  
+      if (!email || !email.includes('@') || !password || password.length < 6) {
+        alert("Please enter a valid email and password (min 6 characters).");
+        return;
+      }
+  
+      if (role === 'doctor') {
+        // Store doctor basic info
+        doctorData.name = document.getElementById('docName').value;
+        doctorData.mobile = document.getElementById('docMobile').value;
+        doctorData.email = email;
+        doctorData.password = password;
+      }
+  
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password
+      });
+  
+      if (error) {
+        alert("Supabase Error: " + error.message);
+        return;
+      }
+  
+      const otp = generateSecureOtp();
+      otpStore[role] = {
+        otp,
+        expires: Date.now() + 3 * 60 * 1000
+      };
+  
+      alert(`📧 OTP sent to ${email} (Simulated): ${otp}`);
+      document.getElementById(`${role}-otp-section`).classList.remove('hidden');
+    };
+  
+    window.verifyOtp = async function (role) {
+      const inputOtp = document.getElementById(role === 'user' ? 'userOtp' : 'docOtp').value;
+      const { otp, expires } = otpStore[role];
+  
+      if (Date.now() > expires) {
+        alert("❌ OTP expired.");
+        return;
+      }
+  
+      if (inputOtp === otp) {
+        const fullName = role === 'user' ? document.getElementById('userName').value : document.getElementById('docName').value;
+        const mobile = role === 'user' ? document.getElementById('userMobile').value : document.getElementById('docMobile').value;
+        const email = role === 'user' ? document.getElementById('userEmail').value : document.getElementById('docEmail').value;
+  
+        // For user path - create user record immediately
+        if (role === 'user') {
+          const { error } = await supabase
+            .from('users')
+            .insert([{
+              name: fullName,
+              mobile,
+              email,
+              verified: true
+            }]);
+      
+          if (error) {
+            alert("DB Error: " + error.message);
+            return;
+          }
+          
+          alert("✅ OTP Verified. User Account Created.");
+          window.location.href = "dashboard.html";
+        } else {
+          // For doctor path - just move to next step (we'll insert all data at the end)
+          document.getElementById('doctor-form').classList.add('hidden');
+          document.getElementById('doctor-extra-form').classList.remove('hidden');
+        }
+      } else {
+        alert("❌ Invalid OTP.");
+      }
+    };
+  
+    window.nextDoctorStep = function () {
+      const inputOtp = document.getElementById('docOtp').value;
+      const { otp, expires } = otpStore['doctor'];
+  
+      if (Date.now() > expires) {
+        alert("❌ OTP expired.");
+        return;
+      }
+  
+      if (inputOtp === otp) {
+        document.getElementById('doctor-form').classList.add('hidden');
+        document.getElementById('doctor-extra-form').classList.remove('hidden');
+      } else {
+        alert("❌ Invalid OTP.");
+      }
+    };
+  
+    window.nextLiveSelfie = function () {
+      const specialization = document.getElementById('docSpecialization').value;
+      const experience = document.getElementById('docExperience').value;
+      const workplace = document.getElementById('docWork').value;
+      const proof = document.getElementById('docProof').files.length;
+  
+      if (!specialization || !experience || !workplace || !proof) {
+        alert("⚠️ Please fill all details.");
+        return;
+      }
+      
+      // Store doctor professional info
+      doctorData.specialization = specialization;
+      doctorData.experience = parseInt(experience);
+      doctorData.workplace = workplace;
+  
+      document.getElementById('doctor-extra-form').classList.add('hidden');
+      document.getElementById('doctor-selfie').classList.remove('hidden');
+  
+      const video = document.getElementById('video');
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          alert("Camera access denied or unavailable.");
+        });
+    };
+  
+    window.captureSelfie = function () {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+  
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+      canvas.classList.remove('hidden');
+      document.getElementById('submitDoctorBtn').classList.remove('hidden');
+  
+      canvas.toBlob(blob => {
+        capturedSelfieBlob = blob;
+      }, 'image/jpeg');
+    };
+  
+    window.submitDoctor = async function () {
+      if (!capturedSelfieBlob) {
+        alert("⚠️ Please capture your selfie.");
+        return;
+      }
+  
+      const proofFileInput = document.getElementById('docProof');
+      if (proofFileInput.files.length === 0) {
+        alert("⚠️ Please upload your proof document.");
+        return;
+      }
+  
+      const proofFile = proofFileInput.files[0];
+  
+      try {
+        // Upload Selfie
+        const selfieFileName = `selfies/${Date.now()}_${Math.random()}.jpg`;
+        const { data: selfieData, error: selfieError } = await supabase.storage
+          .from('doctor-photos')
+          .upload(selfieFileName, capturedSelfieBlob, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+    
+        if (selfieError) {
+          throw new Error("Error uploading selfie: " + selfieError.message);
+        }
+    
+        const selfieUrl = `https://feevjtsbldbrnzeszlqr.supabase.co/storage/v1/object/public/doctor-photos/${selfieFileName}`;
+    
+        // Upload Proof File
+        const proofFileName = `proofs/${Date.now()}_${proofFile.name}`;
+        const { data: proofData, error: proofError } = await supabase.storage
+          .from('doctor-photos')
+          .upload(proofFileName, proofFile, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+    
+        if (proofError) {
+          throw new Error("Error uploading proof: " + proofError.message);
+        }
+    
+        const proofUrl = `https://feevjtsbldbrnzeszlqr.supabase.co/storage/v1/object/public/doctor-photos/${proofFileName}`;
+        
+        // Match field names exactly with database column names
+        const doctorRecord = {
+          name: doctorData.name,
+          mobile: doctorData.mobile,
+          email: doctorData.email,
+          password: doctorData.password,
+          specialization: doctorData.specialization,
+          experience: doctorData.experience,
+          workplace: doctorData.workplace,
+          selfie_url: selfieUrl,
+          proof_url: proofUrl,
+          "proof url": proofUrl,
+          "is verified": false,
+          time: new Date().toISOString()
+        };
+        
+        console.log("Inserting doctor data:", doctorRecord);
+        
+        // Insert complete doctor record
+        const { error: insertError } = await supabase
+          .from('doctors')
+          .insert([doctorRecord]);
+    
+        if (insertError) {
+          throw new Error("Error inserting doctor details: " + insertError.message);
+        }
+    
+        alert("✅ Doctor Registered with Live Selfie and Proof! Awaiting Admin Verification.");
+        window.location.href = "home.html";
+      } catch (error) {
+        alert("❌ " + error.message);
+        console.error("Error:", error);
+      }
+    };
+  
+    window.handleLogin = async function () {
+      const email = document.getElementById('loginEmail').value;
+      const pass = document.getElementById('loginPassword').value;
+  
+      if (!email || !email.includes('@')) {
+        alert("⚠️ Enter a valid email.");
+        return;
+      }
+      if (!pass || pass.length < 6) {
+        alert("⚠️ Password must be at least 6 characters.");
+        return;
+      }
+  
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  
+      if (error) {
+        alert("❌ Login Failed: " + error.message);
+        return;
+      }
+  
+      alert("✅ Logged in successfully.");
+      window.location.href = "home.html";
+    };
+  </script>      
+  
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swasthya Sarthi Doctors Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      background: #f0f9ff;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .header {
+      background: #0077b6;
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .doctors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .doctor-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    .doctor-card:hover {
+      transform: translateY(-5px);
+    }
+    .doctor-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 1rem;
+      border: 3px solid #0077b6;
+    }
+    .doctor-name {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0.5rem 0;
+      color: #0077b6;
+    }
+    .doctor-specialization {
+      font-size: 1rem;
+      color: #555;
+      margin: 0.3rem 0;
+    }
+    .doctor-experience {
+      font-size: 0.9rem;
+      color: #777;
+      margin: 0.3rem 0;
+    }
+    .doctor-status {
+      margin: 0.5rem 0;
+    }
+    .badge {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-verified {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .btn-appointment {
+      background: #059669;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s ease;
+    }
+    .btn-appointment:hover {
+      background: #047857;
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      font-size: 1.2rem;
+      color: #666;
+    }
+    .no-doctors {
+      text-align: center;
+      padding: 2rem;
+      font-size: 1.2rem;
+      color: #666;
+    }
+    .search-bar {
+      margin-bottom: 2rem;
+    }
+    #searchBox {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .debug-panel {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    .error {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .success {
+      color: #198754;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🩺 Swasthya Sarthi Doctors</h1>
+  </div>
+
+  <div class="container">
+    <!-- Debug Panel -->
+    <div id="debugPanel" class="debug-panel">Checking connection to Supabase...</div>
+
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <input type="text" id="searchBox" placeholder="Search by name or specialization..." />
+    </div>
+
+    <!-- Doctors Grid -->
+    <div class="doctors-grid" id="doctorsGrid">
+      <div class="loading">Loading doctors...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      'https://feevjtsbldbrnzeszlqr.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZXZqdHNibGRicm56ZXN6bHFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjI5OTAsImV4cCI6MjA2MDc5ODk5MH0.qva3jP_64B294xnL-YqioBS6JZ-QSn4exFLbWJVlY_U'
+    );
+
+    // DOM elements
+    const doctorsGrid = document.getElementById('doctorsGrid');
+    const searchBox = document.getElementById('searchBox');
+    const debugPanel = document.getElementById('debugPanel');
+
+    // Debug logging
+    const logDebug = (message, isError = false) => {
+      const timestamp = new Date().toLocaleTimeString();
+      const logClass = isError ? 'error' : 'success';
+      debugPanel.innerHTML += `\n[${timestamp}] <span class="${logClass}">${message}</span>`;
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+      console.log(`[${timestamp}] ${message}`);
+    };
+
+    // Variables
+    let allDoctors = [];
+
+    // Fetch all doctors from Supabase
+    async function fetchDoctors() {
+      try {
+        logDebug('Fetching all doctors from database...');
+        const { data, error } = await supabase
+          .from('doctors')
+          .select('name, specialization, experience, selfie_url, email')
+          .order('name', { ascending: true });
+
+        if (error) {
+          logDebug(`Error fetching doctors: ${error.message}`, true);
+          doctorsGrid.innerHTML = `<div class="no-doctors">Error: ${error.message}</div>`;
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          logDebug('No doctors found in database', true);
+          doctorsGrid.innerHTML = `<div class="no-doctors">No doctors available</div>`;
+          return;
+        }
+
+        logDebug(`Successfully fetched ${data.length} doctors`);
+        allDoctors = data;
+        renderDoctors(data);
+      } catch (err) {
+        logDebug(`Error fetching doctors: ${err.message}`, true);
+        doctorsGrid.innerHTML = `<div class="no-doctors">Error: ${err.message}</div>`;
+      }
+    }
+
+    // Render doctors to the grid
+    function renderDoctors(doctors) {
+      if (!doctors || doctors.length === 0) {
+        doctorsGrid.innerHTML = `<div class="no-doctors">No doctors match your search</div>`;
+        return;
+      }
+
+      doctorsGrid.innerHTML = '';
+      doctors.forEach(doctor => {
+        const card = document.createElement('div');
+        card.className = 'doctor-card';
+        card.innerHTML = `
+          <img src="${doctor.selfie_url || 'https://via.placeholder.com/120'}" alt="${doctor.name}" class="doctor-photo" />
+          <div class="doctor-name">${doctor.name || 'Unknown'}</div>
+          <div class="doctor-specialization">${doctor.specialization || 'Not specified'}</div>
+          <div class="doctor-experience">${doctor.experience || 'N/A'} ${doctor.experience ? 'years' : ''}</div>
+          <div class="doctor-status">
+            <span class="badge badge-verified">Verified</span>
+          </div>
+          <button class="btn-appointment" data-name="${doctor.name}" data-email="${doctor.email}">
+            Book Appointment
+          </button>
+        `;
+        doctorsGrid.appendChild(card);
+      });
+
+      // Add event listeners for appointment buttons
+      document.querySelectorAll('.btn-appointment').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const doctorEmail = this.dataset.email;
+          window.location.href = `book.html?doctor_email=${doctorEmail}`;
+          logDebug(`Redirecting to book.html for doctor email: ${doctorEmail}`);
+        });
+      });
+
+      logDebug(`Rendered ${doctors.length} doctors to grid`);
+    }
+
+    // Filter doctors based on search term
+    function filterDoctors() {
+      const searchTerm = searchBox.value.toLowerCase();
+      const filtered = allDoctors.filter(doctor =>
+        (doctor.name && doctor.name.toLowerCase().includes(searchTerm)) ||
+        (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm))
+      );
+      renderDoctors(filtered);
+    }
+
+    // Event listeners
+    searchBox.addEventListener('input', filterDoctors);
+
+    // Initialize
+    async function init() {
+      logDebug('Initializing doctors dashboard...');
+      await fetchDoctors();
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Call - Swasthya Sarthi</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f9ff;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #0077b6;
+    }
+    .video-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    video {
+      width: 300px;
+      height: 225px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: black;
+    }
+    #debug {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    #peerIdInput, #connectButton {
+      margin: 10px;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Video Call</h1>
+  <div>
+    <label>Your Peer ID: </label><span id="myPeerId">Generating...</span>
+  </div>
+  <div>
+    <input id="peerIdInput" type="text" placeholder="Enter other laptop's Peer ID">
+    <button id="connectButton">Connect</button>
+  </div>
+  <div class="video-container">
+    <video id="localVideo" autoplay playsinline muted></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
+  <div id="debug"></div>
+
+  <script>
+    const debugEl = document.getElementById('debug');
+    const myPeerIdEl = document.getElementById('myPeerId');
+    const peerIdInput = document.getElementById('peerIdInput');
+    const connectButton = document.getElementById('connectButton');
+
+    function log(message) {
+      console.log(message);
+      debugEl.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+      debugEl.scrollTop = debugEl.scrollHeight;
+    }
+
+    // Initialize PeerJS
+    const peer = new Peer(); // Uses default PeerJS server (0.peerjs.com)
+    let localStream;
+
+    peer.on('open', (id) => {
+      log(`PeerJS connected. Your Peer ID: ${id}`);
+      myPeerIdEl.textContent = id;
+    });
+
+    peer.on('error', (err) => {
+      log(`PeerJS error: ${err.type} - ${err.message}`);
+    });
+
+    // Get local video/audio stream
+    async function startLocalStream() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+        document.getElementById('localVideo').srcObject = localStream;
+        log('Local stream added');
+      } catch (err) {
+        log(`Error accessing media devices: ${err.message}`);
+      }
+    }
+
+    // Handle incoming calls
+    peer.on('call', (call) => {
+      log('Receiving call...');
+      call.answer(localStream);
+      call.on('stream', (remoteStream) => {
+        document.getElementById('remoteVideo').srcObject = remoteStream;
+        log('Remote stream received');
+      });
+      call.on('error', (err) => {
+        log(`Call error: ${err.message}`);
+      });
+    });
+
+    // Connect to another peer
+    connectButton.addEventListener('click', () => {
+      const remotePeerId = peerIdInput.value.trim();
+      if (!remotePeerId) {
+        log('Please enter a valid Peer ID');
+        return;
+      }
+      log(`Initiating call to ${remotePeerId}...`);
+      const call = peer.call(remotePeerId, localStream);
+      call.on('stream', (remoteStream) => {
+        document.getElementById('remoteVideo').srcObject = remoteStream;
+        log('Remote stream received');
+      });
+      call.on('error', (err) => {
+        log(`Call error: ${err.message}`);
+      });
+    });
+
+    // Start local stream on page load
+    startLocalStream();
+  </script>
+</body>
+</html>

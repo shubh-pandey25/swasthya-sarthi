@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Appointment - Swasthya Sarthi</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f0f9ff;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #0077b6;
+      text-align: center;
+    }
+    .doctor-details {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    .doctor-details img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .doctor-info {
+      flex: 1;
+    }
+    .doctor-info p {
+      margin: 5px 0;
+      font-size: 16px;
+    }
+    .fees {
+      color: #27ae60;
+      font-weight: bold;
+    }
+    .slots-section {
+      margin-top: 20px;
+    }
+    .slots-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .slots-table th, .slots-table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    .slots-table th {
+      background: RGB(34, 48, 73);
+      color: white;
+    }
+    .slots-table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    .slots-table input[type="checkbox"]:disabled {
+      cursor: not-allowed;
+    }
+    .video-consult-btn {
+      display: block;
+      width: 200px;
+      margin: 20px auto;
+      padding: 12px;
+      background: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .video-consult-btn:hover {
+      background: #2ecc71;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Book Appointment</h1>
+    <div class="doctor-details" id="doctorDetails">
+      <img id="doctorSelfie" src="https://via.placeholder.com/150" alt="Doctor Selfie">
+      <div class="doctor-info">
+        <h2 id="doctorName">Loading...</h2>
+        <p><strong>Specialization:</strong> <span id="doctorSpecialization">loading...</span></p>
+        <p><strong>Experience:</strong> <span id="doctorExperience"></span> loading...</p>
+        <p><strong>Workplace:</strong> <span id="doctorWorkplace">loading</span></p>
+        <p><strong>Consultation Fees:</strong> <span class="fees">Free</span></p>
+      </div>
+    </div>
+    <div class="slots-section">
+      <h2>Available Slots</h2>
+      <table class="slots-table" id="slotsTable">
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Date & Time</th>
+          </tr>
+        </thead>
+        <tbody id="slotsBody">
+          <tr>
+            <td><input type="checkbox" value="2025-04-25 10:00"></td>
+            <td>2025-04-25 10:00</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" value="2025-04-25 11:00"></td>
+            <td>2025-04-25 11:00</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" value="2025-04-25 14:00"></td>
+            <td>2025-04-25 14:00</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" value="2025-04-26 12:00"></td>
+            <td>2025-04-26 12:00</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" value="2025-04-26 15:00"></td>
+            <td>2025-04-26 15:00</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" value="2025-04-27 10:00"></td>
+            <td>2025-04-27 10:00</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" value="2025-04-27 16:00"></td>
+            <td>2025-04-27 16:00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <button class="video-consult-btn" id="videoConsultBtn">Video Consultation</button>
+  </div>
+
+  <script>
+    // Simulate loading effect for doctor name
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('doctorName').textContent = 'Dr. ';
+      }, 2000); // Simulate 2-second "loading"
+    });
+
+    // Video consultation button
+    const videoConsultBtn = document.getElementById('videoConsultBtn');
+    if (videoConsultBtn) {
+      videoConsultBtn.addEventListener('click', () => {
+        console.log('Video Consultation button clicked'); // Debug
+        console.log('Attempting to redirect to video-call.html'); // Debug
+        window.location.href = 'video-call.html';
+        console.log('Redirect initiated'); // Debug
+      });
+    } else {
+      console.error('Video Consultation button not found in DOM'); // Debug
+    }
+  </script>
+</body>
+</html>

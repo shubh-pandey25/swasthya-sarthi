@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Swasthya Sarthi - Smart Healthcare</title>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Font Awesome for social media icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { 
+      background: #f9fcff; 
+      color: #222;
+      background-image: url('bg.png'); /* Background image */
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      min-height: 100vh; /* Ensure full height */
+      display: flex;
+      flex-direction: column;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 20px;
+    }
+
+    /* Video container below tabs */
+    .video-background {
+      width: 100%;
+      height: 53vh; /* 25% of viewport height */
+      overflow: hidden;
+      z-index: 0; /* Behind tab content, above bg image */
+    }
+    .video-background video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Cover the container */
+    }
+
+    /* Shift tab content below video */
+    .content-wrapper {
+      position: relative;
+      z-index: 1; /* Above video and bg image */
+      flex: 1; /* Expand to fill available space */
+    }
+
+    header {
+      background: RGB(34, 48, 73); color: white; padding: 1rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.8rem; }
+    nav a {
+      margin: 0 10px; text-decoration: none; color: white; font-weight: 500;
+    }
+    nav a:hover { text-decoration: underline; }
+
+    .tabs {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      background: rgba(224, 247, 255, 0.8); /* Semi-transparent to show bg image */
+      padding: 1rem;
+    }
+    .tab-button {
+      padding: 10px 20px; margin: 5px; background: RGB(34, 48, 73);
+      color: white; border: none; border-radius: 5px; cursor: pointer;
+    }
+    .tab-button:hover { background: #023e8a; }
+
+    .tab-content {
+      display: none; padding: 2rem; animation: fadeIn 0.3s ease-in-out;
+    }
+    .active-tab { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .btn {
+      background: #0077b6; color: white; border: none;
+      padding: 10px; border-radius: 5px; cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn:hover { background: #023e8a; }
+
+    .search-bar input {
+      padding: 10px; width: 60%; border: 1px solid #ccc; border-radius: 5px;
+    }
+
+    .chatbot-button {
+      position: fixed; bottom: 30px; right: 30px;
+      background: RGB(34, 48, 73); color: white; padding: 15px 20px;
+      border: none; border-radius: 50%; font-size: 18px; cursor: pointer;
+    }
+
+    .card-container {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 20px; margin-top: 2rem;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.9); /* Semi-transparent to show bg image */
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 280px;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s ease;
+      text-align: center;
+      cursor: default;
+    }
+    .clickable-card:hover {
+      transform: scale(1.03);
+      cursor: pointer;
+    }
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+    .card h3 {
+      font-size: 1.2rem; margin: 10px 0;
+    }
+    .card p {
+      padding: 0 1rem 1rem;
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    /* Footer */
+    footer {
+      background: #0077b6;
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      margin-top: auto; /* Push to bottom */
+    }
+    footer .footer-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    footer .footer-section {
+      flex: 1;
+      min-width: 200px;
+      margin-bottom: 20px;
+    }
+    footer h3 {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+    }
+    footer a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      margin: 8px 0;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+    footer .social-icons a {
+      font-size: 1.5rem;
+      margin: 0 10px;
+      transition: transform 0.2s;
+    }
+    footer .social-icons a:hover {
+      transform: scale(1.2);
+    }
+    footer .newsletter input {
+      padding: 10px;
+      width: 70%;
+      border: none;
+      border-radius: 5px 0 0 5px;
+      margin-right: -4px;
+    }
+    footer .newsletter button {
+      padding: 10px;
+      background: #023e8a;
+      color: white;
+      border: none;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+    }
+    footer .newsletter button:hover {
+      background: #001f5b;
+    }
+    footer p {
+      margin-top: 20px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🩺 Swasthya Sarthi</h1>
+    <nav>
+      <a href="#" onclick="showTab('home')">Home</a>
+      <a href="#" onclick="showTab('contact')">Contact</a>
+    </nav>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-button" onclick="window.location.href='signnew.html'">🔐 Login</button>
+    <button class="tab-button" onclick="window.location.href='docprofile.html'">👨‍⚕️ Doctors</button>
+    <button class="tab-button" onclick="window.location.href='map.html'">🚑 Ambulance</button>
+  </div>
+
+  <!-- Background Video (Below tabs, above content) -->
+  <div class="video-background">
+    <video autoplay muted loop>
+      <source src="c:\Users\shubh\Videos\Screen Recordings\Screen Recording 2025-04-25 202423.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </div>
+
+  <!-- Content Wrapper (Tab content below video) -->
+  <div class="content-wrapper">
+    <!-- Home -->
+    <div class="tab-content active-tab" id="home">
+      <section>
+        <h2>About Swasthya Sarthi</h2>
+        <br>
+        <p>Swasthya Sarthi is a revolutionary healthcare platform designed to transform how patients access medical services within modern medical colleges and hospitals. By integrating cutting-edge technology with compassionate care, this system offers a seamless experience for booking appointments, consulting doctors online, tracking ambulances, and accessing emergency support. Whether you’re seeking routine care or urgent assistance, Swasthya Sarthi ensures that high-quality healthcare is just a click away, empowering users with tools to prioritize their well-being.</p>
+        <br>
+        <figure style="float: right; margin-left: 1rem; width: 250px;">
+          <img src="sideimg2.png" alt="Additional Image 1" style="height: 1300px;">
+        </figure>
+        <figure style="float: right; margin-left: 1rem; width: 250px;">
+          <img src="img1.jpg" alt="Additional Image 2" style="height: 1600px;">
+        </figure>
+        <figure style="float: left; margin-right: 1rem; width: 500px;">
+          <img src="docconsult.png" alt="Doctor consulting a patient" style="width: 100%;">
+          <br>
+          <p style="margin: 0; overflow: hidden;">At the heart of Swasthya Sarthi is its network of top verified doctors, each certified and experienced in their respective fields. Patients can explore detailed doctor profiles, check availability, and book appointments with ease, eliminating the hassle of long waiting times. The platform’s intuitive interface allows users to select specialists based on their needs, ensuring personalized care from trusted professionals. This feature makes Swasthya Sarthi an ideal choice for those seeking reliable medical expertise.</p>
+        <br>
+        </figure>
+        <br>
+        <figure style="float: left; margin-right: 1rem; width: 500px;">
+          <img src="videoconsult.png" alt="Online video consultation" style="width: 100%;">
+          <p style="margin: 0; overflow: hidden;">Swasthya Sarthi brings healthcare to your fingertips with secure online consultations. Through integrated video call technology, patients can connect with doctors from the comfort of their homes, making medical advice accessible regardless of location. These virtual sessions are designed to be safe, private, and convenient, allowing for real-time discussions about symptoms, diagnoses, and treatment plans. This feature is particularly valuable for individuals with busy schedules or limited access to in-person care.</p>
+        </figure>
+      </section>
+      <div class="card-container">
+        <div class="card clickable-card" onclick="window.location.href='docprofile.html'">
+          <img src="img1.jpg" alt="Verified Doctors">
+          <h3>Top Verified Doctors</h3>
+          <p>Access top-rated, verified doctors available for appointments.</p>
+        </div>
+        <div class="card clickable-card" onclick="window.location.href='docprofile.html'">
+          <img src="img2.jpg" alt="Consultation">
+          <h3>Online Consultations</h3>
+          <p>Talk to experienced doctors through secure online consultation.</p>
+        </div>
+        <div class="card clickable-card" onclick="window.location.href='emergencybot.html'">
+          <img src="img3.jpg" alt="Emergency">
+          <h3>Emergency Assistance</h3>
+          <p>Need urgent help? Find nearby ambulances and first aid guidance.</p>
+        </div>
+      </div>
+      <section>
+        <p>In emergencies, every second counts, and Swasthya Sarthi’s real-time ambulance tracking feature ensures rapid response. By leveraging geolocation technology, the platform enables users to locate nearby ambulances and track their arrival, providing peace of mind during critical moments. This service is seamlessly integrated into the system, allowing users to request assistance and monitor progress with a single tap, making it a lifeline for urgent medical situations.</p>
+        <figure>
+          
+        </figure>
+        <br>
+        <p>Beyond routine care, Swasthya Sarthi excels in delivering emergency assistance when it matters most. The platform offers instant access to first aid guidance and connects users with emergency services, ensuring swift support during crises. Whether it’s a sudden health scare or a need for immediate intervention, Swasthya Sarthi’s dedicated emergency tools provide reliable resources to navigate high-pressure situations effectively.</p>
+        <figure>
+          
+        </figure>
+        <br>
+        <p>Accessibility is a cornerstone of Swasthya Sarthi, with a user-friendly design that works flawlessly on both desktop and mobile devices. The platform’s responsive interface ensures that patients can access all features—whether booking an appointment, joining a video call, or tracking an ambulance—on any device. By combining innovation with ease of use, Swasthya Sarthi delivers a healthcare experience that is smart, inclusive, and tailored to the needs of every user. Join Swasthya Sarthi today to discover a new standard in healthcare excellence.</p>
+      </section>
+    </div>
+
+    <!-- Ambulance -->
+    <div class="tab-content" id="ambulance">
+      <h2>🚑 Ambulance Management</h2>
+      <button class="btn" onclick="getAmbulance()">Track Nearby Ambulance</button>
+      <p id="amb-result" style="margin-top: 10px;"></p>
+    </div>
+
+    <!-- Contact -->
+    <div class="tab-content" id="contact">
+      <h2>📞 Contact Us</h2>
+      <p>📍 Bhojipura, Nainital Road, India</p>
+      <p>📱 +91-9319515024</p>
+      <p>📧 info@swasthyasarthi.in</p>
+    </div>
+
+    <!-- Login Tab -->
+    <div class="tab-content" id="login">
+      <h2>🔐 Login</h2>
+      <!-- TODO: Add your login form here -->
+    </div>
+
+    <button class="chatbot-button" onclick="window.location.href='emergencybot.html'">Chat</button>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-container">
+      <div class="footer-section">
+        <h3>Connect With Us</h3>
+        <div class="social-icons">
+          <a href="https://twitter.com" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="https://facebook.com" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://instagram.com" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="https://linkedin.com" target="_blank" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <a href="#" onclick="showTab('home')">Home</a>
+        <a href="#" onclick="showTab('contact')">Contact</a>
+        <a href="signnew.html">Login</a>
+        <a href="docprofile.html">Doctors</a>
+        <a href="#" onclick="showTab('ambulance')">Ambulance</a>
+      </div>
+      <div class="footer-section">
+        <h3>Contact Info</h3>
+        <p>📍 Bhojipura, Nainital Road, India</p>
+        <p>📱 +91-9319515024</p>
+        <p>📧 info@swasthyasarthi.in</p>
+      </div>
+      <div class="footer-section">
+        <h3>Newsletter</h3>
+        <form class="newsletter">
+          <input type="email" placeholder="Enter your email" required>
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+    <p>© 2025 Swasthya Sarthi. All rights reserved.</p>
+  </footer>
+
+  <script>
+    function showTab(id) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active-tab'));
+      const selected = document.getElementById(id);
+      if (selected) selected.classList.add('active-tab');
+    }
+
+    function getAmbulance() {
+      navigator.geolocation.getCurrentPosition(position => {
+        const { latitude, longitude } = position.coords;
+        const link = `https://maps.google.com/?q=${latitude},${longitude}`;
+        document.getElementById("amb-result").innerHTML = `
+          📍 Ambulance en route to your location. Track here: 
+          <a href="${link}" target="_blank">Open Map</a>
+        `;
+      }, () => {
+        alert("Unable to fetch location");
+      });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>P2P Video Call (WebRTC)</title>
+  <style>
+    body { font-family: Arial; text-align: center; background: #f5f5f5; padding: 20px; }
+    video { width: 45%; margin: 10px; background: #000; }
+    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>🧑‍🤝‍🧑 P2P Video Call Using WebRTC</h2>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video>
+  <div>
+    <button onclick="startCall()">Start Call</button>
+  </div>
+
+  <script>
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+
+    let localStream;
+    let peerConnection;
+    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    // Fake signaling (replace this with WebSocket or Firebase for real app)
+    const signaling = {
+      send: (data) => window.otherPeer.receive(data),
+      receive: async (data) => {
+        if (data.offer) {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          signaling.send({ answer });
+        } else if (data.answer) {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } else if (data.candidate) {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      },
+    };
+
+    window.otherPeer = { receive: signaling.receive };
+
+    async function startCall() {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+
+      peerConnection = new RTCPeerConnection(config);
+
+      peerConnection.ontrack = (e) => {
+        remoteVideo.srcObject = e.streams[0];
+      };
+
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+      peerConnection.onicecandidate = (e) => {
+        if (e.candidate) signaling.send({ candidate: e.candidate });
+      };
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      signaling.send({ offer });
+    }
+  </script>
+</body>
+</html>

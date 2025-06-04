@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Swasthya Sarthi Admin Dashboard</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { 
+      background: #f0f9ff; 
+      margin: 0; 
+      padding: 0; 
+      color: #333;
+    }
+    .header {
+      background: #0077b6;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .admin-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 10px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f2f2f2;
+      font-weight: 600;
+    }
+    tr:hover {
+      background-color: #f8f8f8;
+    }
+    .badge {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-pending {
+      background-color: #ffedd5;
+      color: #c2410c;
+    }
+    .badge-verified {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    .btn-primary {
+      background: #0077b6;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #023e8a;
+    }
+    .btn-success {
+      background: #059669;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #047857;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 10px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .modal-header h2 {
+      margin: 0;
+    }
+    .close {
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .doctor-detail {
+      margin-bottom: 1rem;
+    }
+    .doctor-detail label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+    .preview-image {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+    }
+    #searchBox {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    .filter-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .filter-section button {
+      background: #e0f2fe;
+      border: 1px solid #0ea5e9;
+      color: #0369a1;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .filter-section button.active {
+      background: #0ea5e9;
+      color: white;
+    }
+    .stats-panel {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 200px;
+    }
+    .stat-card h3 {
+      margin-top: 0;
+      color: #0077b6;
+    }
+    .stat-card .number {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      font-size: 1.2rem;
+      color: #666;
+    }
+    .debug-panel {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    .error {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .success {
+      color: #198754;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🩺 Swasthya Sarthi Admin Dashboard</h1>
+  </div>
+
+  <div class="container">
+    <!-- Debug Panel -->
+    <div class="admin-card">
+      <h2>Database Connection Status</h2>
+      <div id="debugPanel" class="debug-panel">Checking connection to Supabase...</div>
+      
+      <div style="margin-top: 15px">
+        <button id="testConnectionBtn" class="btn btn-primary">Test Connection</button>
+        <button id="listTablesBtn" class="btn btn-primary" style="margin-left: 10px">List Tables</button>
+        <button id="refreshDataBtn" class="btn btn-success" style="margin-left: 10px">Refresh Data</button>
+      </div>
+    </div>
+    
+    <div class="stats-panel">
+      <div class="stat-card">
+        <h3>Total Doctors</h3>
+        <div class="number" id="totalDoctors">-</div>
+      </div>
+      <div class="stat-card">
+        <h3>Pending Verification</h3>
+        <div class="number" id="pendingDoctors">-</div>
+      </div>
+      <div class="stat-card">
+        <h3>Verified Doctors</h3>
+        <div class="number" id="verifiedDoctors">-</div>
+      </div>
+    </div>
+    
+    <div class="admin-card">
+      <h2>Doctor Verification</h2>
+      <p>Review and verify doctor registrations before they can access the platform.</p>
+      
+      <div class="filter-section">
+        <button data-filter="all" class="active">All</button>
+        <button data-filter="pending">Pending Verification</button>
+        <button data-filter="verified">Verified</button>
+      </div>
+      
+      <input type="text" id="searchBox" placeholder="Search by name, email, or specialization...">
+      
+      <div class="table-container">
+        <table id="doctorsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Specialization</th>
+              <th>Experience</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="doctorsList">
+            <tr>
+              <td colspan="6" class="loading">Loading doctor data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doctor Details Modal -->
+  <div id="doctorModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Doctor Details</h2>
+        <span class="close">×</span>
+      </div>
+      <div id="doctorDetails">
+        <!-- Doctor details will be loaded here -->
+      </div>
+      <div id="verificationActions" style="margin-top: 2rem; display: flex; gap: 10px;">
+        <button class="btn btn-success" id="verifyBtn">Verify Doctor</button>
+        <button class="btn btn-danger" id="rejectBtn">Reject Application</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  
+    // Debug panel
+    const debugPanel = document.getElementById('debugPanel');
+    const logDebug = (message, isError = false) => {
+      const timestamp = new Date().toLocaleTimeString();
+      const logClass = isError ? 'error' : 'success';
+      debugPanel.innerHTML += `\n[${timestamp}] <span class="${logClass}">${message}</span>`;
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+      console.log(`[${timestamp}] ${message}`);
+    };
+
+    // Initialize Supabase client
+    let supabase;
+    try {
+      supabase = createClient(
+        'https://feevjtsbldbrnzeszlqr.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZXZqdHNibGRicm56ZXN6bHFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjI5OTAsImV4cCI6MjA2MDc5ODk5MH0.qva3jP_64B294xnL-YqioBS6JZ-QSn4exFLbWJVlY_U'
+      );
+      logDebug('Supabase client initialized');
+    } catch (error) {
+      logDebug(`Failed to initialize Supabase client: ${error.message}`, true);
+    }
+
+    // DOM elements
+    const doctorsList = document.getElementById('doctorsList');
+    const doctorModal = document.getElementById('doctorModal');
+    const doctorDetails = document.getElementById('doctorDetails');
+    const closeBtn = document.querySelector('.close');
+    const searchBox = document.getElementById('searchBox');
+    const filterButtons = document.querySelectorAll('.filter-section button');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const rejectBtn = document.getElementById('rejectBtn');
+    const totalDoctorsEl = document.getElementById('totalDoctors');
+    const pendingDoctorsEl = document.getElementById('pendingDoctors');
+    const verifiedDoctorsEl = document.getElementById('verifiedDoctors');
+
+    // Debug buttons
+    const testConnectionBtn = document.getElementById('testConnectionBtn');
+    const listTablesBtn = document.getElementById('listTablesBtn');
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+
+    // Variables
+    let allDoctors = [];
+    let currentDoctorEmail = null;
+    let currentFilter = 'all';
+
+    // Test connection to Supabase
+    async function testConnection() {
+      try {
+        logDebug('Testing connection to Supabase...');
+        const { data, error } = await supabase.from('doctors').select('count');
+        
+        if (error) {
+          logDebug(`Connection test failed: ${error.message}`, true);
+          return false;
+        }
+        
+        logDebug('Connection to Supabase successful!');
+        return true;
+      } catch (err) {
+        logDebug(`Connection test error: ${err.message}`, true);
+        return false;
+      }
+    }
+
+    // List available tables
+    async function listTables() {
+      logDebug('Retrieving available tables...');
+      try {
+        const { data, error } = await supabase.from('doctors').select('count');
+        if (!error) {
+          logDebug('Found table: doctors');
+        } else {
+          logDebug(`Error accessing doctors table: ${error.message}`, true);
+        }
+      } catch (err) {
+        logDebug(`Error listing tables: ${err.message}`, true);
+      }
+    }
+
+    // Fetch all doctors from Supabase
+    async function fetchDoctors() {
+      try {
+        logDebug('Fetching doctors from database...');
+        const { data, error } = await supabase
+          .from('doctors')
+          .select('name, mobile, email, specialization, experience, workplace, proof_url, selfie_url, "is verified", time')
+          .order('time', { ascending: false });
+        
+        if (error) {
+          logDebug(`Error fetching doctors: ${error.message}`, true);
+          doctorsList.innerHTML = `<tr><td colspan="6">Error: ${error.message}</td></tr>`;
+          return;
+        }
+        
+        if (!data || data.length === 0) {
+          logDebug('No doctors found in database', true);
+          doctorsList.innerHTML = `<tr><td colspan="6">No doctors found</td></tr>`;
+          return;
+        }
+        
+        logDebug(`Successfully fetched ${data.length} doctors`);
+        logDebug(`First record structure: ${JSON.stringify(data[0], null, 2)}`);
+        
+        allDoctors = data;
+        renderDoctors(data);
+        updateStatistics(data);
+      } catch (err) {
+        logDebug(`Error fetching doctors: ${err.message}`, true);
+        doctorsList.innerHTML = `<tr><td colspan="6">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    // Update statistics cards
+    function updateStatistics(doctors) {
+      const total = doctors.length;
+      const verified = doctors.filter(doc => doc['is verified'] === true).length;
+      const pending = total - verified;
+      
+      totalDoctorsEl.textContent = total;
+      pendingDoctorsEl.textContent = pending;
+      verifiedDoctorsEl.textContent = verified;
+      
+      logDebug(`Statistics updated: ${total} total, ${pending} pending, ${verified} verified`);
+    }
+
+    // Render doctors to the table
+    function renderDoctors(doctors) {
+      if (!doctors || doctors.length === 0) {
+        doctorsList.innerHTML = `<tr><td colspan="6">No doctors found</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      doctors.forEach(doctor => {
+        html += `
+          <tr data-email="${doctor.email}">
+            <td>${doctor.name || 'Unknown'}</td>
+            <td>${doctor.specialization || 'Not specified'}</td>
+            <td>${doctor.experience || 'N/A'} ${doctor.experience ? 'years' : ''}</td>
+            <td>
+              ${doctor.email || ''}<br>
+              ${doctor.mobile || ''}
+            </td>
+            <td>
+              <span class="badge ${doctor['is verified'] ? 'badge-verified' : 'badge-pending'}">
+                ${doctor['is verified'] ? 'Verified' : 'Pending'}
+              </span>
+            </td>
+            <td>
+              <div class="btn-group">
+                <button class="btn btn-primary view-details">View Details</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      
+      doctorsList.innerHTML = html;
+      logDebug(`Rendered ${doctors.length} doctors to table`);
+      
+      document.querySelectorAll('.view-details').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const doctorEmail = this.closest('tr').dataset.email;
+          openDoctorDetails(doctorEmail);
+        });
+      });
+    }
+
+    // Filter doctors based on search term and filter type
+    function filterDoctors() {
+      const searchTerm = searchBox.value.toLowerCase();
+      
+      let filtered = allDoctors;
+      
+      if (currentFilter === 'pending') {
+        filtered = filtered.filter(doc => !doc['is verified']);
+      } else if (currentFilter === 'verified') {
+        filtered = filtered.filter(doc => doc['is verified']);
+      }
+      
+      if (searchTerm) {
+        filtered = filtered.filter(doc => 
+          (doc.name && doc.name.toLowerCase().includes(searchTerm)) ||
+          (doc.email && doc.email.toLowerCase().includes(searchTerm)) ||
+          (doc.specialization && doc.specialization.toLowerCase().includes(searchTerm)) ||
+          (doc.mobile && doc.mobile.includes(searchTerm))
+        );
+      }
+      
+      renderDoctors(filtered);
+    }
+
+    // Open doctor details modal
+    function openDoctorDetails(doctorEmail) {
+      const doctor = allDoctors.find(doc => doc.email === doctorEmail);
+      if (!doctor) return;
+      
+      currentDoctorEmail = doctorEmail;
+      
+      let detailsHtml = `
+        <div class="doctor-detail">
+          <label>Name:</label>
+          <div>${doctor.name || 'Unknown'}</div>
+        </div>
+        <div class="doctor-detail">
+          <label>Email:</label>
+          <div>${doctor.email || 'N/A'}</div>
+        </div>
+        <div class="doctor-detail">
+          <label>Mobile:</label>
+          <div>${doctor.mobile || 'N/A'}</div>
+        </div>
+        <div class="doctor-detail">
+          <label>Specialization:</label>
+          <div>${doctor.specialization || 'Not specified'}</div>
+        </div>
+        <div class="doctor-detail">
+          <label>Experience:</label>
+          <div>${doctor.experience || 'N/A'} ${doctor.experience ? 'years' : ''}</div>
+        </div>
+        <div class="doctor-detail">
+          <label>Workplace Details:</label>
+          <div>${doctor.workplace || 'N/A'}</div>
+        </div>
+        <div class="doctor-detail">
+          <label>Registration Date:</label>
+          <div>${doctor.time ? new Date(doctor.time).toLocaleString() : 'N/A'}</div>
+        </div>
+        <div class="doctor-detail">
+          <label>Verification Status:</label>
+          <div>
+            <span class="badge ${doctor['is verified'] ? 'badge-verified' : 'badge-pending'}">
+              ${doctor['is verified'] ? 'Verified' : 'Pending'}
+            </span>
+          </div>
+        </div>
+      `;
+      
+      if (doctor.selfie_url) {
+        detailsHtml += `
+          <div class="doctor-detail">
+            <label>Live Selfie:</label>
+            <div>
+              <img src="${doctor.selfie_url}" alt="Doctor Selfie" class="preview-image">
+            </div>
+          </div>
+        `;
+      }
+      
+      if (doctor.proof_url) {
+        detailsHtml += `
+          <div class="doctor-detail">
+            <label>Credentials/Proof Document:</label>
+            <div>
+              <a href="${doctor.proof_url}" target="_blank" class="btn btn-primary">View Document</a>
+            </div>
+          </div>
+        `;
+      }
+      
+      detailsHtml += `
+        <div class="doctor-detail">
+          <label>Raw Data (Debug):</label>
+          <div style="font-family: monospace; white-space: pre-wrap; overflow-x: auto; max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 5px">
+            ${JSON.stringify(doctor, null, 2)}
+          </div>
+        </div>
+      `;
+      
+      doctorDetails.innerHTML = detailsHtml;
+      
+      if (doctor['is verified']) {
+        document.getElementById('verificationActions').style.display = 'none';
+      } else {
+        document.getElementById('verificationActions').style.display = 'flex';
+      }
+      
+      doctorModal.style.display = 'flex';
+    }
+
+    // Update doctor verification status
+    async function updateDoctorStatus(email, isVerified) {
+      try {
+        logDebug(`Updating doctor with email ${email} verification status to ${isVerified}`);
+        const { error } = await supabase
+          .from('doctors')
+          .update({ 'is verified': isVerified })
+          .eq('email', email);
+        
+        if (error) {
+          logDebug(`Error updating status: ${error.message}`, true);
+          alert(`Error updating status: ${error.message}`);
+          return false;
+        }
+        
+        logDebug(`Successfully updated doctor with email ${email} verification status`);
+        return true;
+      } catch (err) {
+        logDebug(`Exception updating status: ${err.message}`, true);
+        alert(`Error: ${err.message}`);
+        return false;
+      }
+    }
+
+    // Event listeners
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentFilter = this.dataset.filter;
+        filterDoctors();
+      });
+    });
+
+    testConnectionBtn.addEventListener('click', testConnection);
+    listTablesBtn.addEventListener('click', listTables);
+    refreshDataBtn.addEventListener('click', fetchDoctors);
+    searchBox.addEventListener('input', filterDoctors);
+    closeBtn.addEventListener('click', function() {
+      doctorModal.style.display = 'none';
+    });
+
+    verifyBtn.addEventListener('click', async function() {
+      if (!currentDoctorEmail) return;
+      
+      if (confirm('Are you sure you want to verify this doctor?')) {
+        const success = await updateDoctorStatus(currentDoctorEmail, true);
+        if (success) {
+          alert('Doctor verified successfully');
+          doctorModal.style.display = 'none';
+          fetchDoctors();
+        }
+      }
+    });
+
+    rejectBtn.addEventListener('click', async function() {
+      if (!currentDoctorEmail) return;
+      
+      if (confirm('Are you sure you want to reject this application? This cannot be undone.')) {
+        try {
+          logDebug(`Deleting doctor with email ${currentDoctorEmail}`);
+          const { error } = await supabase
+            .from('doctors')
+            .delete()
+            .eq('email', currentDoctorEmail);
+          
+          if (error) {
+            logDebug(`Error deleting doctor: ${error.message}`, true);
+            alert(`Error deleting doctor: ${error.message}`);
+            return;
+          }
+          
+          logDebug(`Successfully deleted doctor with email ${currentDoctorEmail}`);
+          alert('Doctor application rejected and deleted successfully');
+          doctorModal.style.display = 'none';
+          fetchDoctors();
+        } catch (err) {
+          logDebug(`Exception deleting doctor: ${err.message}`, true);
+          alert(`Error: ${err.message}`);
+        }
+      }
+    });
+
+    window.addEventListener('click', function(event) {
+      if (event.target == doctorModal) {
+        doctorModal.style.display = 'none';
+      }
+    });
+
+    // Initialize
+    async function init() {
+      await testConnection();
+      fetchDoctors();
+    }
+
+    init();
+  </script>  
+</body>
+</html>
